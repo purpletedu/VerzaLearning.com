@@ -1,0 +1,134 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlayCircle, ArrowLeft } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { toast } from "sonner";
+
+export default function JoinRoomPage() {
+  const navigate = useNavigate();
+  const [roomCode, setRoomCode] = useState("");
+  const [playerName, setPlayerName] = useState("");
+  const [step, setStep] = useState(1); // 1 = enter code, 2 = enter name
+
+  const { data: allRooms } = useQuery({
+    queryKey: ['all-rooms'],
+    queryFn: () => base44.entities.Room.list(),
+    initialData: [],
+  });
+
+  const handleCodeSubmit = (e) => {
+    e.preventDefault();
+    if (!roomCode.trim()) {
+      toast.error("Please enter a room code");
+      return;
+    }
+
+    const room = allRooms.find(r => r.room_code === roomCode.toUpperCase() && r.status !== 'finished');
+    
+    if (!room) {
+      toast.error("Invalid or expired room code");
+      return;
+    }
+
+    setStep(2);
+  };
+
+  const handleNameSubmit = (e) => {
+    e.preventDefault();
+    if (!playerName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    const room = allRooms.find(r => r.room_code === roomCode.toUpperCase());
+    navigate(`${createPageUrl("GameLobby")}?room_id=${room.id}&player_name=${encodeURIComponent(playerName)}`);
+  };
+
+  return (
+    <div className="min-h-screen p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        <Link to={createPageUrl("StudentDashboard")}>
+          <Button variant="ghost" className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+
+        <Card className="bg-white/90 backdrop-blur-sm border-2 border-cyan-200 shadow-2xl">
+          <CardHeader>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center">
+                <PlayCircle className="w-6 h-6 text-white" />
+              </div>
+              <CardTitle className="text-3xl">
+                {step === 1 ? "Join Game Room" : "Enter Your Name"}
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {step === 1 ? (
+              <form onSubmit={handleCodeSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Enter Room Code
+                  </label>
+                  <Input
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    placeholder="ABC123"
+                    className="text-2xl py-6 text-center font-bold tracking-wider"
+                    maxLength={6}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-6 text-lg"
+                >
+                  Continue
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleNameSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What's your name?
+                  </label>
+                  <Input
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="text-xl py-6"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="flex-1 py-6"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-6 text-lg"
+                  >
+                    Join Room
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
