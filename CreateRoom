@@ -1,0 +1,15 @@
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+export default function CreateRoomPage() {
+  const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
+  const classId = urlParams.get('class_id');
+
+  React.useEffect(() => {
+    navigate(`${createPageUrl("SelectGameMode")}?class_id=${classId}`);
+  }, []);
+
+  return null;
+}
